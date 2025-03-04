@@ -1,0 +1,23 @@
+---
+- name: Include check requirements tasks
+  ansible.builtin.include_tasks: "check-requirements.yaml"
+- name: Include setup basic configurations tasks
+  ansible.builtin.include_tasks: "setup-basic-configurations.yaml"
+- name: Include configure packages tasks
+  ansible.builtin.include_tasks: "configure-packages.yaml"
+- name: Include install php tasks
+  ansible.builtin.include_tasks: "install-php.yaml"
+- name: Include configure Webserver & DB & PHP tasks
+  ansible.builtin.include_tasks: "configure-webserver-db-php.yaml"
+- name: Include install node_exporter tasks
+  ansible.builtin.include_tasks: "install-node-exporter.yaml"
+- name: Include install Nginx exporter tasks
+  ansible.builtin.include_tasks: "install-nginx-exporter.yaml"
+- name: Include install Mariadb exporter tasks
+  ansible.builtin.include_tasks: "install-mariadb-exporter.yaml"
+- name: Include reload and restart configurations tasks
+  ansible.builtin.include_tasks: "enable-and-restart-services.yaml"
+- name: Include configure firewall tasks
+  ansible.builtin.include_tasks: "configure-firewall.yaml"
+- name: Include configure cronjobs tasks
+  ansible.builtin.include_tasks: "configure-cronjobs.yaml"

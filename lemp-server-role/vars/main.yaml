@@ -1,0 +1,38 @@
+initial_setup: false
+server_hostname: "lemp-server"
+rerwrite_firewall_rules: false
+fix_files_permissions: false
+allow_db_restarting: false
+required_apt_packages:
+  - chrony
+  - net-tools
+  - python3.12-venv
+  - nginx
+  - iptables-persistent
+  - mariadb-server
+php_version: "8.3"
+php_upload_max_filesize: '10M'
+required_php_extensions:
+  - php{{ php_version }}
+  - php{{ php_version }}-fpm
+  - php{{ php_version }}-mysql
+  - php{{ php_version }}-curl
+  - php{{ php_version }}-imagick
+  - php{{ php_version }}-intl
+  - php{{ php_version }}-mbstring
+  - php{{ php_version }}-zip
+  - php{{ php_version }}-soap
+  - php{{ php_version }}-bcmath
+  - php{{ php_version }}-redis
+  - php{{ php_version }}-opcache
+  - php{{ php_version }}-xmlreader
+upload_backups_to_s3_access_key: "vault_website_server_upload_backups_to_s3_access_key"
+upload_backups_to_s3_secret_key: "vault_website_server_upload_backups_to_s3_secret_key"
+website_db_name: "databasename"
+website_db_user: "databaseuser"
+website_db_password: "vault_website_server_database_password"
+website_domain: "mywebsite.com"
+root_db_password: "vault_website_server_root_database_password"
+exporter_db_password: "vault_website_server_exporter_database_password"
+node_exporter_password: "vault_website_server_node_exporter_bcrypt_hashed_password"
+monitoring_server_ip: "194.156.100.200/32"

@@ -1,0 +1,9 @@
+---
+  - hosts: myserver
+    become: true
+    gather_facts: yes
+    roles:
+      - name: lemp-server-role
+        vars:
+          initial_setup: false
+          server_hostname: "website-server"

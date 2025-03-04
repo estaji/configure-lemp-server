@@ -1,0 +1,17 @@
+server {
+    listen 9114 ssl;
+    server_name nginx-{{ server_hostname }}.{{ website_domain }};
+
+    #access_log /var/log/nginx/access-exporter.log timed_combined;
+    #error_log /var/log/nginx/error-exporter.log;
+    ssl_buffer_size 4k;
+    ssl_certificate /etc/nginx/ssl/star.{{ website_domain }}.crt;
+    ssl_certificate_key /etc/nginx/ssl/star.{{ website_domain }}.key;
+    ssl_ciphers EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH;
+    ssl_dhparam /etc/nginx/ssl/dhparams.pem;
+
+    location / {
+        proxy_pass http://localhost:9113;
+    }
+
+}

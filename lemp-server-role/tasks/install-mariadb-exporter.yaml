@@ -1,0 +1,63 @@
+- name: Provide required grants
+  when: initial_setup
+  ansible.builtin.shell: |
+    mysql \
+      --user="root" \
+      --password="{{ root_db_password }}" \
+      --execute="CREATE USER 'exporter'@'localhost' IDENTIFIED BY '{{ exporter_db_password }}' WITH MAX_USER_CONNECTIONS 3; GRANT PROCESS, REPLICATION CLIENT, SLAVE MONITOR, SELECT ON *.* TO 'exporter'@'localhost';"
+- name: Download mariadb exporter
+  when: initial_setup
+  ansible.builtin.shell: |
+    cd /tmp ;
+    wget https://github.com/prometheus/mysqld_exporter/releases/download/v0.16.0/mysqld_exporter-0.16.0.linux-amd64.tar.gz ;
+    tar xvfz mysqld_exporter-*.*-amd64.tar.gz ;
+    mv mysqld_exporter-*.*-amd64/mysqld_exporter /usr/local/bin/ ;
+    useradd -rs /bin/false mariadb_exporter ;
+- name: Create mariadb exporter service
+  when: initial_setup
+  ansible.builtin.shell: |
+    cat << 'EOF' > /etc/systemd/system/mariadb_exporter.service
+    [Unit]
+    Description=Mariadb Exporter
+    After=network.target
+    [Service]
+    User=mariadb_exporter
+    Group=mariadb_exporter
+    Type=simple
+    ExecStart=/usr/local/bin/mysqld_exporter \
+      --web.config.file=/etc/node_exporter_web.yaml  \
+      --config.my-cnf /etc/.mysqld_exporter.cnf  \
+      --collect.global_status  \
+      --collect.info_schema.innodb_metrics \
+      --collect.info_schema.processlist  \
+      --collect.binlog_size  \
+      --collect.info_schema.tablestats  \
+      --collect.global_variables  \
+      --collect.info_schema.query_response_time  \
+      --collect.info_schema.userstats  \
+      --collect.info_schema.tables  \
+      --collect.perf_schema.tablelocks  \
+      --collect.perf_schema.file_events  \
+      --collect.perf_schema.eventswaits  \
+      --collect.perf_schema.indexiowaits  \
+      --collect.perf_schema.tableiowaits
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+- name: Copy mysql_exporter conf to the server
+  ansible.builtin.template:
+    src: "../templates/mysqld_exporter.cnf.j2"
+    dest: "/etc/.mysqld_exporter.cnf"
+    owner: mariadb_exporter
+    group: mariadb_exporter
+    mode: '0644'
+- name: Start and enable node_exporter
+  when: initial_setup
+  ansible.builtin.shell: |
+    systemctl daemon-reload ;
+    systemctl start mariadb_exporter ;
+    systemctl enable mariadb_exporter ;
+- name: Copy mariadb_exporter nginx conf to the server
+  ansible.builtin.template:
+    src: "../templates/nginx-mariadb-exporter.conf.j2"
+    dest: "/etc/nginx/conf.d/mariadb-exporter.conf"

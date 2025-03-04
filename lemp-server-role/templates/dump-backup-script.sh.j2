@@ -1,0 +1,37 @@
+#!/bin/bash                                                                                                                                          
+                                                                                                                                                     
+# Variables                                                                                                                                          
+DBNAME='{{ website_db_name }}'                                                                                                                                          
+DBUSER='{{ website_db_user }}'
+DBPASS='{{ website_db_password }}'
+DIR=/opt/backup
+FILE=$DIR/$DBNAME-$(date +"%Y-%m-%d-%H").sql
+
+# FUNCTIONS
+upload_bak () {
+        logger -p local5.info -t "upload" "Start uploading backup to s3 bucket..."
+        source /opt/upload-backup-to-s3/venv/bin/activate
+        python /opt/upload-backup-to-s3/upload-backup-to-s3.py $DIR/$DBNAME-$(date +"%Y-%m-%d-%H")-db.tar.gz $DBNAME-$(date +"%Y-%m-%d-%H")-db.tar.gz
+        if [[ $? -eq 0 ]]; then
+                logger -p local5.info -t "upload" "Uploading backup to s3 bucket was OK"
+        else
+                logger -p local5.info -t "upload" "Uploading backup to s3 bucket FAILED"
+                exit 1;
+        fi
+}
+
+# MAIN
+logger -p local5.info -t "dump" "### Start dumping website database... ###"
+mysqldump -u$DBUSER --databases $DBNAME -p$DBPASS --result-file=$FILE
+if [[ $? -eq 0 ]]; then
+        logger -p local5.info -t "dump" "create dump was OK"
+        tar -czf $DIR/$DBNAME-$(date +"%Y-%m-%d-%H")-db.tar.gz -C $DIR/ $DBNAME-$(date +"%Y-%m-%d-%H").sql
+        rm -f $FILE
+        find /opt/backup/ -type f  -ctime 30 -name '*db*.tar.gz' -exec rm -f "{}" \;
+else
+        logger -p local5.info -t "dump" "create dump was FAIL"
+        upload_bak
+        exit 1;
+fi
+upload_bak
+logger -p local5.info -t "dump" "### Backuping website database finished. ###"

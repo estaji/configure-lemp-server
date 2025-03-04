@@ -1,0 +1,56 @@
+- name: Copy nginx.conf file to the server
+  ansible.builtin.template:
+    src: "../templates/nginx.conf.j2"
+    dest: "/etc/nginx/nginx.conf"
+- name: Copy nginx.conf file to the server
+  ansible.builtin.template:
+    src: "../templates/{{ website_domain }}.conf.j2"
+    dest: "/etc/nginx/conf.d/{{ website_domain }}.conf"
+- name: Copy mariadb configuration file to the server
+  ansible.builtin.template:
+    src: "../templates/mariadb-cnf.j2"
+    dest: "/etc/mysql/mariadb.conf.d/50-server.cnf"
+- name: Create mariadb log file requirements
+  when: initial_setup
+  ansible.builtin.shell: |
+    mkdir -m 2750 /var/log/mysql ;
+    chown mysql /var/log/mysql ;
+- name: Check the ssl certificate existence
+  ansible.builtin.stat:
+    path: "/etc/nginx/ssl/star.{{ website_domain }}.crt"
+  register: mywebsite_cert_result
+- name: Ensure the ssl certificate existence
+  ansible.builtin.fail:
+    msg: FAILED! Please copy star.{{ website_domain }}.crt & star.{{ website_domain }}.key and dhparams.pem in ssl directory.
+  when: not mywebsite_cert_result.stat.exists
+- name: Download SourceGuardian
+  when: initial_setup
+  ansible.builtin.shell: |
+    mkdir /usr/local/sourceguardian ;
+    cd /usr/local/sourceguardian ;
+    curl https://www.sourceguardian.com/loaders/download/loaders.linux-x86_64.tar.gz --output loaders.linux-x86_64.tar.gz
+    tar xzf loaders.linux-x86_64.tar.gz
+    cp ixed.{{ php_version }}.lin /usr/lib/php/20230831/
+- name: Enable SourceGuardian
+  when: initial_setup
+  ansible.builtin.blockinfile:
+    state: present
+    insertafter: EOF
+    dest: /etc/php/{{ php_version }}/fpm/php.ini
+    marker: ";Enable SourceGuardian - ANSIBLE MANAGED BLOCK"
+    content: |
+      extension=ixed.{{ php_version }}.lin
+- name: Change upload_max_filesize in php-fpm
+  ansible.builtin.lineinfile:
+    path: /etc/php/{{ php_version }}/fpm/php.ini
+    regexp: '^upload_max_filesize\s*=(.*)$'
+    line: 'upload_max_filesize = {{ php_upload_max_filesize }}'
+- name: Fix ownership of website files
+  when: fix_files_permissions
+  ansible.builtin.shell: chown www-data:www-data -R /usr/share/nginx/my-website
+- name: Fix permissions of website files
+  when: fix_files_permissions
+  ansible.builtin.shell: find /usr/share/nginx/my-website/ -type f -exec chmod 644 {} \;
+- name: Fix permissions of website directories
+  when: fix_files_permissions
+  ansible.builtin.shell: find /usr/share/nginx/my-website/ -type d -exec chmod 755 {} \;

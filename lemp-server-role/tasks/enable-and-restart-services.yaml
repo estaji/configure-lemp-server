@@ -1,0 +1,53 @@
+- name: Enable php-fpm service
+  ansible.builtin.shell: systemctl enable php{{ php_version }}-fpm.service
+- name: Enable Nginx service
+  ansible.builtin.shell: systemctl enable nginx.service
+- name: Enable iptables service
+  ansible.builtin.shell: systemctl enable netfilter-persistent
+- name: Enable mariadb service
+  ansible.builtin.shell: systemctl enable mariadb
+
+- name: Restart Rsyslog service
+  ansible.builtin.shell: systemctl restart rsyslog.service
+- name: Restart node_exporter service
+  ansible.builtin.shell: systemctl restart node_exporter.service
+- name: Restart nginx_exporter service
+  ansible.builtin.shell: systemctl restart nginx_exporter.service
+- name: Restart mariadb_exporter service
+  ansible.builtin.shell: systemctl restart mariadb_exporter.service
+- name: Restart Mariadb service
+  ansible.builtin.shell: systemctl restart mariadb.service
+  when: allow_db_restarting
+- name: Verify Nginx configuration
+  ansible.builtin.command: nginx -t
+- name: Reload Nginx configuration
+  ansible.builtin.command: nginx -s reload
+- name: Restart php-fpm
+  ansible.builtin.shell: systemctl restart php{{ php_version }}-fpm.service
+- name: Get status of services
+  ansible.builtin.service_facts:
+  register: services_state
+- name: Check Mariadb status
+  ansible.builtin.fail:
+    msg: Mariadb service is stopped!
+  when: services_state['ansible_facts']['services']['mariadb.service']['state'] != "running"
+- name: Check Nginx status
+  ansible.builtin.fail:
+    msg: Nginx service is stopped!
+  when: services_state['ansible_facts']['services']['nginx.service']['state'] != "running"
+- name: Check php-fpm status
+  ansible.builtin.fail:
+    msg: PHP-FPM service is stopped!
+  when: services_state['ansible_facts']['services']['php' ~ php_version ~ '-fpm']['state'] != "running"
+- name: Check rsyslog status
+  ansible.builtin.fail:
+    msg: Rsyslog service is stopped!
+  when: services_state['ansible_facts']['services']['rsyslog.service']['state'] != "running"
+- name: Check node_exporter status
+  ansible.builtin.fail:
+    msg: node_exporter service is stopped!
+  when: services_state['ansible_facts']['services']['node_exporter.service']['state'] != "running"
+- name: Check nginx_exporter status
+  ansible.builtin.fail:
+    msg: nginx_exporter service is stopped!
+  when: services_state['ansible_facts']['services']['nginx_exporter.service']['state'] != "running"

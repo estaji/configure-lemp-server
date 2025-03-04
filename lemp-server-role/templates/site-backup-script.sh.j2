@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# Variables
+TIMESTAMP=$(date +"%Y-%m-%d-%H")
+
+# Functions
+upload_bak () {
+    logger -p local5.info -t "upload" "Start uploading backup to s3 bucket..."
+    source /opt/upload-backup-to-s3/venv/bin/activate
+    python /opt/upload-backup-to-s3/upload-backup-to-s3.py /opt/backup/my-site-$TIMESTAMP.tar.gz my-site-$TIMESTAMP.tar.gz
+    if [[ $? -eq 0 ]]; then
+            logger -p local5.info -t "upload" "Uploading backup to s3 bucket was OK"
+    else
+            logger -p local5.info -t "upload" "Uploading backup to s3 bucket FAILED"
+            exit 1;
+    fi
+}
+
+# MAIN
+logger -p local5.info -t "site" "$$$ Compressing website files started... $$$"
+tar -czf /opt/backup/my-site-$TIMESTAMP.tar.gz -C /usr/share/nginx/ my-website
+if [[ $? -eq 0 ]]; then 
+        logger -p local5.info -t "site" "Site back up was OK"
+        find /opt/backup/ -type f  -ctime 30 -name '*site*.tar.gz' -exec rm -f "{}" \;
+else
+        logger -p local5.info -t "site" "Site back up was FAIL"
+        upload_bak
+        exit 1;
+fi
+upload_bak
+logger -p local5.info -t "site" "$$$ site-backup script finished successfully. $$$"

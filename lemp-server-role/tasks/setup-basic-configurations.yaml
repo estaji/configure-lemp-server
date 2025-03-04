@@ -1,0 +1,32 @@
+- name: Configure hostname
+  when: initial_setup
+  ansible.builtin.shell: hostnamectl set-hostname {{ server_hostname }}
+- name: Modify the host file
+  when: initial_setup
+  ansible.builtin.blockinfile:
+    state: present
+    insertafter: EOF
+    dest: /etc/hosts
+    marker: "# ANSIBLE MANAGED BLOCK"
+    content: |
+      185.88.100.200 another-server
+- name: Modify the bashrc file
+  when: initial_setup
+  ansible.builtin.blockinfile:
+    state: present
+    insertafter: EOF
+    dest: /root/.bashrc
+    marker: "# ANSIBLE MANAGED BLOCK"
+    content: |
+      export EDITOR=/usr/bin/vim
+- name: Set timezone to Tehran
+  ansible.builtin.shell: timedatectl set-timezone Asia/Tehran
+- name: Copy custom rsyslog conf file
+  ansible.builtin.template:
+    src: "../templates/custom-logging.conf.j2"
+    dest: "/etc/rsyslog.d/10-custom-logging.conf"
+- name: Update and upgrade packages
+  ansible.builtin.apt:
+    upgrade: yes
+    update_cache: yes
+    cache_valid_time: 3600 # One hour

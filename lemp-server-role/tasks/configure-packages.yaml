@@ -1,0 +1,11 @@
+- name: Remove ufw firewall
+  when: initial_setup
+  ansible.builtin.package:
+    name: "ufw"
+    state: absent
+- name: Install required packages
+  when: initial_setup
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ required_apt_packages }}"

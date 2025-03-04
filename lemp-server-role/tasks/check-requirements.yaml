@@ -1,0 +1,8 @@
+- name: Check OS distro
+  ansible.builtin.fail:
+    msg: Wrong OS! Website server os should be Ubuntu
+  when: ansible_distribution != "Ubuntu"
+- name: Check OS major version
+  ansible.builtin.fail:
+    msg: Wrong Ubuntu version! Ubuntu 24 or 22 LTS is supported.
+  when: ansible_distribution_major_version != "24" and ansible_distribution_major_version != "22"

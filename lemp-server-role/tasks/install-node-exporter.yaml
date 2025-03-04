@@ -1,0 +1,41 @@
+- name: Download node_exporter
+  when: initial_setup
+  ansible.builtin.shell: |
+    cd /tmp ;
+    wget https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz ;
+    tar xvfz node_exporter-*.*-amd64.tar.gz ;
+    mv node_exporter-*.*-amd64/node_exporter /usr/local/bin/ ;
+    useradd -rs /bin/false node_exporter ;
+- name: Create node_exporter service
+  when: initial_setup
+  ansible.builtin.shell: |
+    cat << 'EOF' > /etc/systemd/system/node_exporter.service
+    [Unit]
+    Description=Node Exporter
+    After=network.target
+    [Service]
+    User=node_exporter
+    Group=node_exporter
+    Type=simple
+    ExecStart=/usr/local/bin/node_exporter --web.config.file=/etc/node_exporter_web.yaml
+    [Install]
+    WantedBy=multi-user.target
+    EOF
+- name: Copy node_exporter conf file
+  when: initial_setup
+  ansible.builtin.template:
+    src: "../templates/node-exporter-conf.yaml.j2"
+    dest: "/etc/node_exporter_web.yaml"
+- name: Fix permissions of node_exporter conf file
+  when: initial_setup
+  ansible.builtin.shell: chown node_exporter:node_exporter /etc/node_exporter_web.yaml 
+- name: Start and enable node_exporter
+  when: initial_setup
+  ansible.builtin.shell: |
+    systemctl daemon-reload ;
+    systemctl start node_exporter ;
+    systemctl enable node_exporter
+- name: Copy node_exporter nginx conf to the server
+  ansible.builtin.template:
+    src: "../templates/nginx-node-exporter.conf.j2"
+    dest: "/etc/nginx/conf.d/node-exporter.conf"

@@ -1,0 +1,92 @@
+    server {
+        listen 443 ssl;
+        root /usr/share/nginx/my-website;
+		index index.php;
+		access_log /var/log/nginx/access-my-website.log timed_combined;
+		error_log /var/log/nginx/error-my-website.log;
+		server_name {{ website_domain }} www.{{ website_domain }};
+		ssl_protocols TLSv1.2 TLSv1.3;
+    	ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
+    	#ssl_ciphers HIGH:!EXP:!NULL:!ADH:!LOW:!SSLv2:!SSLv3:!MD5:!RC4;
+		#ssl_ciphers HIGH:!aNULL:!MD5;
+		ssl_prefer_server_ciphers on;
+    	ssl_dhparam /etc/nginx/ssl/dhparams.pem;
+    	ssl_certificate /etc/nginx/ssl/star.{{ website_domain }}.crt;
+    	ssl_certificate_key /etc/nginx/ssl/star.{{ website_domain }}.key;
+	
+		ssl_session_cache shared:TLS:2m;
+    	ssl_buffer_size 4k;
+	
+		# OCSP stapling
+    	ssl_stapling on;
+    	ssl_stapling_verify on;
+    	resolver 8.8.8.8 valid=300s; #Google DNS
+    	resolver_timeout 5s;
+
+    	# Set HSTS to 365 days
+    	add_header Strict-Transport-Security 'max-age=31536000; preload' always;
+    	#add_header X-Frame-Options DENY;
+		add_header X-Frame-Options "SAMEORIGIN" always; 
+    	add_header X-Content-Type-Options nosniff;
+    	add_header X-XSS-Protection "1; mode=block";
+		#add_header 'Access-Control-Allow-Origin' '*';
+		client_max_body_size 256M;
+		add_header 'Access-Control-Allow-Origin' '*' always;
+		add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
+		add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range' always;
+		add_header 'Access-Control-Expose-Headers' 'Content-Length,Content-Range' always;
+
+        location / {
+	    try_files $uri $uri/ /index.php?$args;
+	}
+
+	#location ~ \wp-login.php$ {
+	#limit_req zone=WPRATELIMIT;
+	#}
+
+	location ~ /\.user.ini {
+	   deny all;
+	   return 301 https://{{ website_domain }}/;
+	}
+
+	location ~* /(?:uploads|files|wp-content|wp-includes|akismet)/.*.php$ {
+ 	   deny all;
+	   return 301 https://{{ website_domain }}/;
+	}
+	
+        location ~* /xmlrpc.php {
+	    deny all;
+	    return 301 https://{{ website_domain }}/;
+	}
+
+        location ~* /wp-cron.php {
+	    deny all;
+	    return 301 https://{{ website_domain }}/;
+	}
+
+        location = /favicon.ico {
+                log_not_found off;
+                access_log off;
+        }
+
+        location = /robots.txt {
+                allow all;
+                log_not_found off;
+                access_log off;
+        }
+
+       location ~ \.php$ {
+                include fastcgi_params;
+				#more_set_headers "Access-Control-Allow-Origin: $http_origin";
+                fastcgi_intercept_errors on;
+             	fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+                #The following parameter can be also included in fastcgi_params file
+                fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        }
+
+        location ~* .(js|css|png|jpg|jpeg|gif|ico|ttf|woff|woff2|eot)$ {
+                expires max;
+				add_header Access-Control-Allow-Origin *;
+                log_not_found off;
+        }
+    }

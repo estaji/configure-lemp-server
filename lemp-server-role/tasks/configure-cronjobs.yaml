@@ -1,0 +1,84 @@
+- name: Create scripts directory
+  ansible.builtin.file:
+    path: '/root/scripts'
+    state: directory
+    mode: '0755'
+- name: Ensures backups directory exists
+  ansible.builtin.file: 
+    path: "/opt/backup"
+    state: directory
+    recurse: yes
+    owner: "0"
+    group: "0"
+    mode: '755'
+- name: Ensures firewall backups directory exists
+  ansible.builtin.file: 
+    path: "/opt/fw-backup"
+    state: directory
+    recurse: yes
+    owner: "0"
+    group: "0"
+    mode: '755'
+- name: Ensures backups log file exists
+  ansible.builtin.shell: touch /var/log/backup-scripts.log && chown syslog /var/log/backup-scripts.log
+- name: Ensures firewall backups log file exists
+  ansible.builtin.shell: touch /var/log/firewall-updating.log && chown syslog /var/log/firewall-updating.log
+- name: Ensures upload-backup-to-s3 directory exists
+  ansible.builtin.file: 
+    path: "/opt/upload-backup-to-s3"
+    state: directory
+    recurse: yes
+    owner: "0"
+    group: "0"
+    mode: '755'
+- name: Setup Python virtual-env for upload-backup-to-s3 script
+  when: initial_setup
+  ansible.builtin.shell: |
+    cd /opt/upload-backup-to-s3 ; python3 -m venv venv
+- name: Copy upload-backup-to-s3 python requirements.txt file
+  when: initial_setup
+  ansible.builtin.template:
+    src: "../templates/upload-backup-to-s3-req.txt.j2"
+    dest: "/opt/upload-backup-to-s3/requirements.txt"
+- name: Copy upload-backup-to-s3 python script
+  ansible.builtin.template:
+    src: "../templates/upload-backup-to-s3.py.j2"
+    dest: "/opt/upload-backup-to-s3/upload-backup-to-s3.py"
+    owner: root
+    group: root
+    mode: '0700'
+- name: Install Python dependencies for upload-backup-to-s3 script
+  when: initial_setup
+  ansible.builtin.shell: |
+    cd /opt/upload-backup-to-s3 ; source venv/bin/activate ; pip install -r ./requirements.txt
+  args:
+    executable: /bin/bash
+- name: Copy site-backup.sh script to the server
+  ansible.builtin.template:
+    src: "../templates/site-backup-script.sh.j2"
+    dest: "/root/scripts/site-backup.sh"
+    owner: root
+    group: root
+    mode: '0700'
+- name: Setup site-backup.sh cronjob
+  ansible.builtin.cron:
+    name: site-backup
+    weekday: "0"
+    minute: "0"
+    hour: "0"
+    user: root
+    job: "/root/scripts/site-backup.sh"
+- name: Copy dump.sh script to the server
+  ansible.builtin.template:
+    src: "../templates/dump-backup-script.sh.j2"
+    dest: "/root/scripts/dump.sh"
+    owner: root
+    group: root
+    mode: '0700'
+- name: Setup dump.sh cronjob
+  ansible.builtin.cron:
+    name: dump-backup
+    minute: "0"
+    hour: "2"
+    user: root
+    job: "/root/scripts/dump.sh"

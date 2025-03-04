@@ -1,0 +1,8 @@
+- name: Copy iptables rules to the server
+  when: rerwrite_firewall_rules
+  ansible.builtin.template:
+    src: "../templates/iptables.j2"
+    dest: "/etc/iptables/rules.v4"
+- name: Reload firewall
+  when: rerwrite_firewall_rules
+  ansible.builtin.shell: service netfilter-persistent reload
