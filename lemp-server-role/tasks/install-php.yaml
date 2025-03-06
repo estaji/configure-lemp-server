@@ -1,7 +1,7 @@
 - name: Add repository for php
   when: initial_setup
   ansible.builtin.shell: |
-    apt install software-properties-common -y ; sleep 2 ; add-apt-repository ppa:ondrej/php
+    apt install software-properties-common -y ; sleep 2 ; add-apt-repository ppa:ondrej/php -y
 - name: Install php extensions
   when: initial_setup
   ansible.builtin.package:
