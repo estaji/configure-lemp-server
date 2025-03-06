@@ -15,12 +15,14 @@ Do these steps before using this role:
 ## Usage
 To use the role, you can create your own playbook.yaml and inventory files.
 
-Then modify vars section in your playbook.yaml file. Overwrite boolean variables carefully.
+Then modify vars section in your playbook.yaml file to overwrite variables.
 
 Run the playbook.
 
 ## Caution
 Running this playbook will overwrite and change some configuration files.
+
+Add the SSH port in templates/iptables.j2 file.
 
 # Contribution
 Feel free and don't hesitate to contribute to this repository.
