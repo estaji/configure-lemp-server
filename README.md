@@ -3,6 +3,14 @@ This Ansible role installs and maintains a Linux server that contains Nginx webs
 
 Not only can this role install a LEMP (Linux+Nginx+Mariadb+PHP) server (on first execution), but also the role provides management features using flag variables (on next executions).
 
+This role:
+ - Installs iptables service
+ - Installs Nginx + Nginx exporter
+ - Installs Mariadb + Mariadb exporter
+ - Installs PHP
+ - Installs Node Exporter
+ - Adds cronjobs
+
 # How
 ## Requirements
 Do these steps before using this role:
